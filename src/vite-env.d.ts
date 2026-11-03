@@ -1,0 +1,18 @@
+interface ViteTypeOptions {
+    // 添加这行代码，你就可以将 ImportMetaEnv 的类型设为严格模式，
+    // 这样就不允许有未知的键值了。
+    // strictImportMetaEnv: unknown
+}
+
+interface ImportMetaEnv {
+    readonly VITE_API_AUTH_URL: string
+    readonly VITE_API_SYSTEM_URL: string
+    readonly VITE_API_CONTENT_URL: string
+    readonly VITE_PUBLIC_PATH: string
+    readonly VITE_API_BASE_URL: string
+    readonly VITE_GLOB_IMG_URL: string
+    readonly VITE_API_KB_URL: string
+
+    readonly VITE_API_AI_URL: string
+    // 更多环境变量...
+}
