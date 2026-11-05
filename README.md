@@ -1,8 +1,6 @@
 # intelligent-qa-frontend
 
-Intelligent Question Answering frontend
-
-Intelligent Question Answering（智能问答）
+Intelligent Question Answering frontend（智能问答系统前端项目）
 
 ## 图示（部分）
 
