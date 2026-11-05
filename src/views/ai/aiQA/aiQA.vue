@@ -116,7 +116,7 @@
             <div class="ai-qa__footer">
                 <div class="ai-qa__input">
                     <a-textarea v-model:value="inputValue" :bordered="false" :auto-size="{ minRows: 1, maxRows: 5 }"
-                        placeholder="输入关于江苏省专升本招生计划的问题" @keydown="handleKeydown" />
+                        placeholder="输入问题" @keydown="handleKeydown" />
                     <a-button type="primary" class="ai-qa__send-btn" :loading="loading" :disabled="!canSend"
                         @click="handleSend">发送</a-button>
                 </div>
@@ -587,7 +587,7 @@ function handleSSELine(rawLine: string, aiIndex: number) {
 
     &__input {
         display: flex;
-        align-items: flex-end;
+        align-items: flex-start;
         gap: 10px;
         padding: 8px 8px 8px 14px;
         border: 1px solid #e5e5e5;
