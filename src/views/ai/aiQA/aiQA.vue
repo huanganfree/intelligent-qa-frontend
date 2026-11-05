@@ -1,5 +1,5 @@
 <template>
-    <div class="ai-page">
+    <div ref="pageRef" class="ai-page">
         <div class="ai-upload" style="display: none;">
             <div class="ai-upload__header">
                 <div class="ai-upload__title">文件上传</div>
@@ -39,17 +39,17 @@
 
         <div class="ai-qa">
             <div class="ai-qa__header">
-                <a-space :size="12">
+                <div class="ai-qa__header-inner">
                     <a-avatar :size="40" class="ai-qa__avatar">
                         <template #icon>
                             <RobotOutlined />
                         </template>
                     </a-avatar>
-                    <div>
+                    <div class="ai-qa__header-info">
                         <div class="ai-qa__title">江苏省专升本招生计划 · 智能问答</div>
                         <div class="ai-qa__desc">关于江苏省专升本招生计划的问题尽管问我，我会为你解答</div>
                     </div>
-                </a-space>
+                </div>
             </div>
 
             <div class="ai-qa__main">
@@ -116,7 +116,7 @@
             <div class="ai-qa__footer">
                 <div class="ai-qa__input">
                     <a-textarea v-model:value="inputValue" :bordered="false" :auto-size="{ minRows: 1, maxRows: 5 }"
-                        placeholder="输入关于江苏省专升本招生计划的问题，Enter 发送，Shift + Enter 换行" @keydown="handleKeydown" />
+                        placeholder="输入关于江苏省专升本招生计划的问题" @keydown="handleKeydown" />
                     <a-button type="primary" class="ai-qa__send-btn" :loading="loading" :disabled="!canSend"
                         @click="handleSend">发送</a-button>
                 </div>
@@ -127,7 +127,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, ref } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import { DeleteOutlined, FileExcelOutlined, FilePdfOutlined, LoadingOutlined, RobotOutlined, UploadOutlined, UserOutlined, VerticalAlignBottomOutlined, VerticalAlignTopOutlined } from '@ant-design/icons-vue';
 import { message } from 'ant-design-vue';
 import ShowMarkdown from '@/components/ShowMarkdown/ShowMarkdown.vue';
@@ -140,6 +140,7 @@ interface ChatMessage {
 }
 
 const scrollRef = ref<HTMLElement>();
+const pageRef = ref<HTMLElement>();
 const messages = ref<ChatMessage[]>([]);
 const inputValue = ref('');
 const loading = ref(false);
@@ -149,6 +150,33 @@ const showBottomBtn = ref(false);
 let messageId = 0;
 
 const canSend = computed(() => !!inputValue.value.trim() && !loading.value);
+
+// ---------------- H5 视口适配 ----------------
+// 以 visualViewport 高度为准，兼容 iOS 键盘弹出、地址栏收起、横竖屏切换
+function updatePageHeight() {
+    const height = window.visualViewport?.height ?? window.innerHeight;
+    pageRef.value?.style.setProperty('--ai-page-height', `${height}px`);
+}
+
+function handleViewportChange() {
+    updatePageHeight();
+    if (isNearBottom.value) {
+        nextTick(scrollToBottom);
+    }
+}
+
+onMounted(() => {
+    updatePageHeight();
+    window.addEventListener('resize', handleViewportChange);
+    window.addEventListener('orientationchange', handleViewportChange);
+    window.visualViewport?.addEventListener('resize', handleViewportChange);
+});
+
+onBeforeUnmount(() => {
+    window.removeEventListener('resize', handleViewportChange);
+    window.removeEventListener('orientationchange', handleViewportChange);
+    window.visualViewport?.removeEventListener('resize', handleViewportChange);
+});
 
 // ---------------- 文件上传 ----------------
 const ALLOWED_EXTS = ['.pdf', '.xls', '.xlsx', '.csv'];
@@ -342,6 +370,10 @@ function handleSSELine(rawLine: string, aiIndex: number) {
     display: flex;
     gap: 16px;
     height: calc(100vh - 96px);
+    // 刘海屏/灵动岛：上、左、右安全区；底部黑条（Home Indicator）：下安全区
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    overflow: hidden;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .ai-upload {
@@ -449,21 +481,39 @@ function handleSSELine(rawLine: string, aiIndex: number) {
         border-bottom: 1px solid #f0f0f0;
     }
 
+    &__header-inner {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 0;
+    }
+
+    &__header-info {
+        flex: 1;
+        min-width: 0;
+    }
+
     &__avatar {
         background: linear-gradient(135deg, #00b96b, #36cfc9);
         color: #fff;
     }
 
     &__title {
+        overflow: hidden;
         font-size: 16px;
         font-weight: 600;
         color: rgba(0, 0, 0, 0.88);
+        white-space: nowrap;
+        text-overflow: ellipsis;
     }
 
     &__desc {
         margin-top: 2px;
+        overflow: hidden;
         font-size: 12px;
         color: rgba(0, 0, 0, 0.45);
+        white-space: nowrap;
+        text-overflow: ellipsis;
     }
 
     &__main {
@@ -475,6 +525,8 @@ function handleSSELine(rawLine: string, aiIndex: number) {
     &__body {
         height: 100%;
         overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior-y: contain;
 
         &::-webkit-scrollbar {
             width: 6px;
@@ -650,6 +702,73 @@ function handleSSELine(rawLine: string, aiIndex: number) {
         border-radius: 12px 2px 12px 12px;
         background: #00b96b;
         color: #fff;
+    }
+}
+
+/* ---------------- H5 移动端适配 ---------------- */
+@media (max-width: 768px) {
+    .ai-page {
+        flex-direction: column;
+        gap: 0;
+        // 高度由 JS 按 visualViewport 同步，兼容 iOS 键盘与地址栏收起
+        height: var(--ai-page-height, 100vh);
+        background: #fff;
+    }
+
+    .ai-qa {
+        border-radius: 0;
+    }
+
+    .ai-qa__header {
+        padding: 12px 16px;
+    }
+
+    .ai-qa__list {
+        gap: 16px;
+        padding: 16px 16px 24px;
+    }
+
+    .ai-qa__footer {
+        padding: 10px 16px 8px;
+    }
+
+    .ai-qa__input {
+        padding: 6px 6px 6px 12px;
+
+        // 16px 可避免 iOS 聚焦输入框时自动放大页面
+        :deep(.ant-input) {
+            font-size: 16px;
+        }
+    }
+
+    .ai-qa__send-btn {
+        height: 36px;
+        padding: 0 16px;
+        touch-action: manipulation;
+    }
+
+    .ai-qa__tools {
+        right: 12px;
+        bottom: 12px;
+    }
+
+    .ai-qa__tool-btn {
+        width: 40px;
+        height: 40px;
+        touch-action: manipulation;
+    }
+
+    .ai-qa__empty {
+        padding: 0 16px;
+        text-align: center;
+
+        p {
+            line-height: 1.6;
+        }
+    }
+
+    .message__bubble {
+        max-width: 82%;
     }
 }
 </style>
